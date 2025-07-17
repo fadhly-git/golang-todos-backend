@@ -3,73 +3,115 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import Image from "next/image"
-import { useState } from "react"
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from "lucide-react"
+import { MailIcon } from "lucide-react"
+import { PasswordInput } from "./password-input"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { loginFormSchema } from '@/lib/validation-schemas'
+import { useForm } from "react-hook-form"
+import z from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { toast } from "sonner"
+import Link from "next/link"
+
+const formSchema = loginFormSchema
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const [showPassword, setShowPassword] = useState(false);
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Handle form submission logic here
+    try {
+      console.log("Form submitted with values:", values)
+      toast(
+        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
+        </pre>,
+      )
+    } catch (error) {
+      console.error('Form submission error', error)
+      toast.error('Failed to submit the form. Please try again.')
+    }
+  }
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Welcome back</h1>
-                <p className="text-muted-foreground text-balance">
-                  Login to your account
-                </p>
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative flex items-center rounded-md border focus-within:ring-1 focus-within:ring-ring pl-2">
-                  <MailIcon className="h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    className="border-0 focus-visible:ring-0 shadow-none"
-                  />
+          <Form {...form}>
+            <form className="p-6 md:p-8" onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col items-center text-center">
+                  <h1 className="text-2xl font-bold">Welcome back</h1>
+                  <p className="text-muted-foreground text-balance">
+                    Login to your account
+                  </p>
                 </div>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-3">
+                      <FormLabel htmlFor="email">Email</FormLabel>
+                      <FormControl>
+                        <div className="relative flex items-center rounded-md border focus-within:ring-1 focus-within:ring-ring pl-2">
+                          <MailIcon className="h-5 w-5 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            className="border-0 focus-visible:ring-0 shadow-none"
+                            autoComplete="email"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className="grid gap-3">
+                      <div className="flex items-center">
+                        <FormLabel htmlFor="password">Password</FormLabel>
+                        <Link href={"#"} className="ml-auto text-sm underline-offset-2 hover:underline">
+                          Forgot your password?
+                        </Link>
+                      </div>
+                      <FormControl>
+                        <PasswordInput
+                          placeholder="Password"
+                          autoComplete="current-password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full">
+                  Login
+                </Button>
               </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <div className="relative flex items-center rounded-md border focus-within:ring-1 focus-within:ring-ring px-2">
-                  <LockIcon className="h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    className="border-0 focus-visible:ring-0 shadow-none"
-                  />
-                  <button onClick={togglePasswordVisibility} type="button">
-                    {showPassword ? (
-                      <EyeOffIcon className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-            </div>
-          </form>
+            </form>
+          </Form>
+
           <div className="bg-muted relative hidden md:block">
             <Image
               fill
