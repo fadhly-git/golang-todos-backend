@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"go-todo-api/config"
+	"go-todo-api/middleware"
 	"go-todo-api/routes"
 
 	"github.com/joho/godotenv"
@@ -25,7 +26,10 @@ func main() {
 	} else {
 		log.Println("Using PORT from .env:", port)
 	}
+	r := routes.SetupRouter()
+	handlerWithCORS := middleware.EnableCORS(r)
 
 	log.Println("Starting server on :" + port)
-	log.Fatal(http.ListenAndServe(":" + port, routes.SetupRouter()))
+	log.Fatal(http.ListenAndServe(":" + port, handlerWithCORS))
+
 }
