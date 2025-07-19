@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import type { CardType, ColumnType } from '@/types';
+import api from '@/lib/axios';
 
 const addCardSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -16,7 +17,15 @@ const addCardSchema = z.object({
 
 type AddCardForm = z.infer<typeof addCardSchema>;
 
-export const AddCard = ({ column, setCards }: { column: ColumnType; setCards: React.Dispatch<React.SetStateAction<CardType[]>> }) => {
+export const AddCard = ({
+    column,
+    setCards,
+    refreshCards
+}: {
+    column: ColumnType;
+    setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
+    refreshCards: () => Promise<void>;
+}) => {
     const [adding, setAdding] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,37 +45,19 @@ export const AddCard = ({ column, setCards }: { column: ColumnType; setCards: Re
 
     const onSubmit = async (data: AddCardForm) => {
         setIsSubmitting(true);
-        console.log('Submitting data:', data);
         try {
-            // Prepare data dengan structure yang sesuai dengan backend
             const taskData = {
                 title: data.title,
                 description: data.description,
-                // column akan di-set otomatis berdasarkan kolom tempat task dibuat
+                column: parseInt(column, 10), // Pastikan column dikirim sebagai integer
             };
 
-            // Replace with your actual API endpoint
-            const response = await fetch('/api/tasks', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(taskData),
-            });
+            const response = await api.post('/api/tasks', taskData);
+            console.log('Task created:', response.data);
 
-            if (!response.ok) {
-                throw new Error('Failed to create task');
-            }
+            // Refresh data from backend to ensure sync
+            await refreshCards();
 
-            const newCard = await response.json();
-            // Tambahkan column ke newCard jika backend tidak mengembalikannya
-            const cardWithColumn = {
-                ...newCard,
-                column: String(column),
-                id: newCard.id || Date.now().toString(), // fallback ID jika backend tidak memberikan
-            };
-
-            setCards(prev => [...prev, cardWithColumn]);
             reset();
             setAdding(false);
             toast.success('Task added successfully!');

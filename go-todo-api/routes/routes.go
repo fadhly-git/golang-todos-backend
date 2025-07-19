@@ -18,7 +18,7 @@ func SetupRouter() *mux.Router {
 	// group routes yang memerlukan autentikasi
 	protected := r.PathPrefix("/api").Subrouter()
 	protected.Use(middleware.JWTAuth) // gunakan middleware untuk autentikasi
-	
+
 	// protected route
 	protected.HandleFunc("/me", controllers.Me).Methods("GET")
 
@@ -28,6 +28,7 @@ func SetupRouter() *mux.Router {
 	protected.HandleFunc("/tasks/{id}", controllers.GetTaskHandler).Methods("GET")
 	protected.HandleFunc("/tasks/{id}", controllers.UpdateTaskHandler).Methods("PUT")
 	protected.HandleFunc("/tasks/{id}", controllers.DeleteTaskHandler).Methods("DELETE")
+	protected.HandleFunc("/tasks/{id}/status", controllers.UpdateTaskStatusHandler).Methods("PATCH")
 
 	return r
 }

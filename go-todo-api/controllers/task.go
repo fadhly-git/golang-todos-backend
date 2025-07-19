@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"go-todo-api/config"
 	"go-todo-api/dto"
 	"go-todo-api/models"
 
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 )
 
 func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +159,39 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config.DB.Delete(&task)
+	task.DeletedAt = gorm.DeletedAt{Time: time.Now(), Valid: true}
+	if err := config.DB.Save(&task).Error; err != nil {
+		http.Error(w, "Gagal menghapus task", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func UpdateTaskStatusHandler(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	userID, _ := GetUserIDFromContext(r)
+
+	var task models.Task
+	result := config.DB.Where("id = ? AND user_id = ?", id, userID).First(&task)
+	if result.Error != nil {
+		http.Error(w, "Task tidak ditemukan", http.StatusNotFound)
+		return
+	}
+
+	var body struct {
+		Status int `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Data tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	task.Status = body.Status
+	if err := config.DB.Save(&task).Error; err != nil {
+		http.Error(w, "Gagal memperbarui status", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(task)
 }

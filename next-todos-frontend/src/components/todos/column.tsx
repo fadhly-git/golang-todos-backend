@@ -4,6 +4,8 @@ import type { CardType, ColumnType } from '@/types';
 import { Card } from '@/components/todos/card';
 import { DropIndicator } from '@/components/todos/drop-indicator';
 import { AddCard } from '@/components/todos/add-card';
+import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 export const Column = ({
     title,
@@ -11,52 +13,97 @@ export const Column = ({
     cards,
     column,
     setCards,
+    refreshCards,
 }: {
     title: string;
     headingColor: string;
     cards: CardType[];
     column: ColumnType;
     setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
+    refreshCards: () => Promise<void>;
 }) => {
     const [active, setActive] = useState(false);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, card: CardType) => {
-        e.dataTransfer.setData('cardId', card.id);
+        e.dataTransfer.setData('cardId', String(card.id));
+        console.log('onDragStart triggered for card:', card);
+        console.log('cardId set as string:', String(card.id));
     };
 
-    const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragEnd = async (e: React.DragEvent<HTMLDivElement>) => {
+        console.log('=== handleDragEnd started ===');
         const cardId = e.dataTransfer.getData('cardId');
+        console.log('cardId:', cardId, 'type:', typeof cardId);
+        console.log('target column:', column);
 
         setActive(false);
         clearHighlights();
 
         const indicators = getIndicators();
+        console.log('indicators found:', indicators.length);
         const { element } = getNearestIndicator(e, indicators);
+        console.log('nearest indicator element:', element);
+        console.log('element dataset:', element.dataset);
 
         const before = element.dataset.before || '-1';
+        console.log('before:', before, 'type:', typeof before);
+        console.log('cardId comparison:', before !== cardId);
 
         if (before !== cardId) {
+            console.log('Moving card...');
             let copy = [...cards];
+            console.log('original cards:', copy);
+            console.log('cardId to find:', cardId, 'type:', typeof cardId);
+            console.log('cards ids:', copy.map(c => ({ id: c.id, type: typeof c.id })));
 
-            let cardToTransfer = copy.find((c) => c.id === cardId);
-            if (!cardToTransfer) return;
+            let cardToTransfer = copy.find((c) => String(c.id) === String(cardId));
+            console.log('cardToTransfer found:', cardToTransfer);
+            if (!cardToTransfer) {
+                console.log('Card not found, returning');
+                return;
+            }
             cardToTransfer = { ...cardToTransfer, column };
+            console.log('cardToTransfer updated:', cardToTransfer);
 
-            copy = copy.filter((c) => c.id !== cardId);
+            copy = copy.filter((c) => String(c.id) !== String(cardId));
+            console.log('copy after filtering:', copy);
 
             const moveToBack = before === '-1';
+            console.log('moveToBack:', moveToBack);
 
             if (moveToBack) {
                 copy.push(cardToTransfer);
             } else {
-                const insertAtIndex = copy.findIndex((el) => el.id === before);
-                if (insertAtIndex === -1) return;
+                const insertAtIndex = copy.findIndex((el) => String(el.id) === String(before));
+                console.log('insertAtIndex:', insertAtIndex);
+                if (insertAtIndex === -1) {
+                    console.log('Insert index not found, returning');
+                    return;
+                }
 
                 copy.splice(insertAtIndex, 0, cardToTransfer);
             }
 
+            console.log('final copy before setCards:', copy);
             setCards(copy);
+
+            // Call API to update task status
+            try {
+                const response = await api.patch(`/api/tasks/${cardId}/status`, { status: parseInt(column) });
+                console.log('API response:', response.data);
+
+                // Refresh data from backend to ensure sync
+                await refreshCards();
+
+                toast.success('Task moved successfully!');
+            } catch (error) {
+                console.error('Failed to update task status:', error);
+            }
+        } else {
+            console.log('Card not moved (before === cardId)');
         }
+
+        console.log('=== handleDragEnd finished ===');
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -64,6 +111,7 @@ export const Column = ({
         highlightIndicator(e);
 
         setActive(true);
+        console.log('handleDragOver triggered for column:', column);
     };
 
     const clearHighlights = (els?: HTMLElement[]) => {
@@ -133,7 +181,7 @@ export const Column = ({
                     <Card key={c.id} {...c} handleDragStart={handleDragStart} setCards={setCards} />
                 ))}
                 <DropIndicator beforeId={null} column={column} />
-                <AddCard column={column} setCards={setCards} />
+                <AddCard column={column} setCards={setCards} refreshCards={refreshCards} />
             </div>
         </div>
     );
