@@ -29,7 +29,7 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	task := models.Task{
 		Title:       body.Title,
 		Description: body.Description,
-		Completed:   body.Completed,
+		Status:      body.Column,
 		UserID:      userID,
 	}
 
@@ -50,10 +50,10 @@ func GetAllTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Query params
 	query := r.URL.Query()
-	completed := query.Get("completed")          // true / false / empty
-	pageStr := query.Get("page")                 // page number
-	limitStr := query.Get("limit")               // items per page
-	sortStr := query.Get("sort")                 // e.g. created_at,desc
+	completed := query.Get("completed") // true / false / empty
+	pageStr := query.Get("page")        // page number
+	limitStr := query.Get("limit")      // items per page
+	sortStr := query.Get("sort")        // e.g. created_at,desc
 
 	page := 1
 	limit := 10
@@ -136,7 +136,7 @@ func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	task.Title = body.Title
 	task.Description = body.Description
-	task.Completed = body.Completed
+	task.Status = body.Column
 
 	if err := config.DB.Save(&task).Error; err != nil {
 		http.Error(w, "Gagal update", http.StatusInternalServerError)

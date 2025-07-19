@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
 import { type BreadcrumbItem as BreadcrumbItemType } from "@/types"
 import React from "react"
+import { ModeToggle } from "./mode-togle"
 
 export function SiteHeader({ breadcrumbs }: { breadcrumbs?: BreadcrumbItemType[] }) {
   const { toggleSidebar } = useSidebar()
@@ -51,6 +52,7 @@ export function SiteHeader({ breadcrumbs }: { breadcrumbs?: BreadcrumbItemType[]
           </Breadcrumb>
         )}
         <SearchForm className="w-full sm:ml-auto sm:w-auto" />
+        <ModeToggle />
       </div>
     </header>
   )
