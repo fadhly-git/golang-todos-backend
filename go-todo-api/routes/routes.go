@@ -28,6 +28,7 @@ func SetupRouter() *mux.Router {
 	protected.HandleFunc("/tasks/{id}", controllers.GetTaskHandler).Methods("GET")
 	protected.HandleFunc("/tasks/{id}", controllers.UpdateTaskHandler).Methods("PUT")
 	protected.HandleFunc("/tasks/{id}", controllers.DeleteTaskHandler).Methods("DELETE")
+	protected.HandleFunc("/tasks/{id}/status", controllers.UpdateTaskStatusHandler).Methods("PATCH")
 
 	return r
 }
