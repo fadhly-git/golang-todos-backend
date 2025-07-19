@@ -20,6 +20,10 @@ import z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import Link from "next/link"
+import api from "@/lib/axios"
+import Cookies from "js-cookie"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react";
 
 const formSchema = loginFormSchema
 
@@ -27,6 +31,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,15 +39,24 @@ export function LoginForm({
       password: "",
     },
   })
+
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, [router]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // Handle form submission logic here
     try {
-      console.log("Form submitted with values:", values)
-      toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>,
+      const res = await api.post("/auth/login", values);
+      toast.success(
+        "Login successful! Redirecting to your dashboard..."
       )
+      Cookies.set("token", res.data.token, { expires: 1 });
+      form.reset();
+      router.push("/dashboard");
     } catch (error) {
       console.error('Form submission error', error)
       toast.error('Failed to submit the form. Please try again.')
@@ -114,7 +128,9 @@ export function LoginForm({
 
           <div className="bg-muted relative hidden md:block">
             <Image
+              loading="lazy"
               fill
+              priority={false}
               sizes="(min-width: 768px) 50vw, 100vw"
               src="/placeholder.svg"
               alt="Image"
