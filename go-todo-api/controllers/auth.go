@@ -3,6 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"go-todo-api/config"
@@ -12,29 +14,43 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte("rahasia123") // ganti dengan .env nanti
+var jwtKey = []byte(os.Getenv("JWT_SECRET")) // ganti dengan .env nanti
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Data tidak valid", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Data tidak valid")
 		return
 	}
 
+	// Hash password
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Hash gagal", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Gagal menghash password")
 		return
 	}
 	user.Password = string(hashed)
 
+	// Simpan ke DB
 	if err := config.DB.Create(&user).Error; err != nil {
-		http.Error(w, "Gagal simpan user: "+err.Error(), http.StatusInternalServerError)
+		// Coba detect duplicate dengan cara lain
+		if strings.Contains(err.Error(), "duplicate key value") {
+			if strings.Contains(err.Error(), "users_username_key") {
+				respondWithError(w, http.StatusConflict, "Username sudah digunakan")
+				return
+			}
+			if strings.Contains(err.Error(), "users_email_key") {
+				respondWithError(w, http.StatusConflict, "Email sudah digunakan")
+				return
+			}
+		}
+		respondWithError(w, http.StatusInternalServerError, "Gagal menyimpan user")
 		return
 	}
 
+	// Sembunyikan password di response
 	user.Password = ""
-	json.NewEncoder(w).Encode(user)
+	respondWithJSON(w, http.StatusCreated, user)
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
