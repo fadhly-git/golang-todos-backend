@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"go-todo-api/config"
@@ -12,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte("rahasia123") // ganti dengan .env nanti
+var jwtKey = []byte(os.Getenv("JWT_SECRET")) // ganti dengan .env nanti
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -63,8 +64,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	tokenString, _ := token.SignedString(jwtKey)
 
-	json.NewEncoder(w).Encode(map[string]string{
+	// Remove password before returning user
+	user.Password = ""
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"token": tokenString,
+		"user":  user,
 	})
 }
 

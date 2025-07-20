@@ -13,4 +13,10 @@ export interface CardType {
     updatedAt?: string;
 }
 
+export interface User {
+    ID: number;
+    Username: string;
+    Email: string;
+}
+
 export type ColumnType = 'todo' | 'doing' | 'done' | string;

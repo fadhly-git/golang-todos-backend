@@ -54,9 +54,12 @@ export function LoginForm({
       toast.success(
         "Login successful! Redirecting to your dashboard..."
       )
+      // console.log("Login response:", res.data);
       Cookies.set("token", res.data.token, { expires: 1 });
+      Cookies.set("user", JSON.stringify(res.data.user), { expires: 1 });
       form.reset();
       router.push("/dashboard");
+
     } catch (error) {
       console.error('Form submission error', error)
       toast.error('Failed to submit the form. Please try again.')

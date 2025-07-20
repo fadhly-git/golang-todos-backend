@@ -13,6 +13,8 @@ api.interceptors.request.use((config) => {
     const token = Cookies.get('token'); // Ambil token dari cookies
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+    } else {
+        console.warn('No token found in cookies, requests will not be authenticated');
     }
     return config;
 }, (error) => {
